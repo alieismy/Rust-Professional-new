@@ -69,14 +69,42 @@ impl<T> LinkedList<T> {
             },
         }
     }
-	pub fn merge(list_a:LinkedList<T>,list_b:LinkedList<T>) -> Self
+	pub fn merge(list_a: LinkedList<T>, list_b: LinkedList<T>) -> Self
+	where
+		T: Ord,
 	{
-		//TODO
-		Self {
-            length: 0,
-            start: None,
-            end: None,
-        }
+		let mut merged = LinkedList::new();
+		let mut current_a = list_a.start;
+		let mut current_b = list_b.start;
+		
+		// 同时遍历两个链表，比较并添加较小的节点
+		while let (Some(ptr_a), Some(ptr_b)) = (current_a, current_b) {
+			let node_a = unsafe { &*ptr_a.as_ptr() };
+			let node_b = unsafe { &*ptr_b.as_ptr() };
+			
+			if node_a.val <= node_b.val {
+				merged.add(node_a.val);
+				current_a = node_a.next;
+			} else {
+				merged.add(node_b.val);
+				current_b = node_b.next;
+			}
+		}
+		
+		// 处理剩余的节点
+		while let Some(ptr_a) = current_a {
+			let node_a = unsafe { &*ptr_a.as_ptr() };
+			merged.add(node_a.val);
+			current_a = node_a.next;
+		}
+		
+		while let Some(ptr_b) = current_b {
+			let node_b = unsafe { &*ptr_b.as_ptr() };
+			merged.add(node_b.val);
+			current_b = node_b.next;
+		}
+		
+		merged
 	}
 }
 
@@ -100,6 +128,15 @@ where
         match self.next {
             Some(node) => write!(f, "{}, {}", self.val, unsafe { node.as_ref() }),
             None => write!(f, "{}", self.val),
+        }
+    }
+}
+
+impl<T> Drop for LinkedList<T> {
+    fn drop(&mut self) {
+        while let Some(node_ptr) = self.start {
+            let node = unsafe { Box::from_raw(node_ptr.as_ptr()) };
+            self.start = node.next;
         }
     }
 }

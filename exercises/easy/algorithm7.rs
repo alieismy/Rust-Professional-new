@@ -31,8 +31,12 @@ impl<T> Stack<T> {
 		self.size += 1;
 	}
 	fn pop(&mut self) -> Option<T> {
-		// TODO
-		None
+		if self.size > 0 {
+			self.size -= 1;
+			self.data.pop()
+		} else {
+			None
+		}
 	}
 	fn peek(&self) -> Option<&T> {
 		if 0 == self.size {
@@ -99,10 +103,42 @@ impl<'a, T> Iterator for IterMut<'a, T> {
 	}
 }
 
-fn bracket_match(bracket: &str) -> bool
-{
-	//TODO
-	true
+fn bracket_match(bracket: &str) -> bool {
+	let mut stack = Stack::new();
+	
+	for ch in bracket.chars() {
+		match ch {
+			// 遇到左括号，压入栈中
+			'(' | '[' | '{' => stack.push(ch),
+			
+			// 遇到右括号，检查是否匹配
+			')' | ']' | '}' => {
+				// 如果栈为空，说明没有对应的左括号
+				if stack.is_empty() {
+					return false;
+				}
+				
+				// 获取栈顶的左括号
+				let top = stack.pop().unwrap();
+				
+				// 检查括号是否匹配
+				let is_match = match (top, ch) {
+					('(', ')') | '[', ']') | '{', '}' => true,
+					_ => false
+				};
+				
+				if !is_match {
+					return false;
+				}
+			}
+			
+			// 忽略其他字符
+			_ => continue
+		}
+	}
+	
+	// 最后检查栈是否为空（是否所有左括号都有匹配的右括号）
+	stack.is_empty()
 }
 
 #[cfg(test)]

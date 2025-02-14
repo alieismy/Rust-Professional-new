@@ -14,8 +14,33 @@
 use std::fmt::{self, Display, Formatter};
 
 pub fn merge_intervals(intervals: Vec<Vec<i32>>) -> Vec<Vec<i32>> {
-    // TODO: Implement the logic to merge overlapping intervals
-    Vec::new() // Placeholder return value
+    if intervals.is_empty() {
+        return Vec::new();
+    }
+    
+    // 创建一个可变的区间副本并按起始点排序
+    let mut intervals = intervals;
+    intervals.sort_by_key(|interval| interval[0]);
+    
+    let mut result = Vec::new();
+    let mut current = intervals[0].clone();
+    
+    // 遍历所有区间进行合并
+    for interval in intervals.into_iter().skip(1) {
+        if interval[0] <= current[1] {
+            // 区间重叠，更新当前区间的结束点
+            current[1] = current[1].max(interval[1]);
+        } else {
+            // 区间不重叠，将当前区间加入结果，开始新的区间
+            result.push(current);
+            current = interval;
+        }
+    }
+    
+    // 添加最后一个区间
+    result.push(current);
+    
+    result
 }
 
 #[cfg(test)]

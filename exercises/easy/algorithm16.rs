@@ -12,7 +12,52 @@
 use std::fmt::{self, Display, Formatter};
 
 pub fn rotate_matrix_90_degrees(matrix: &mut Vec<Vec<i32>>) {
-    // TODO: Implement the logic to rotate the matrix 90 degrees in place
+    let n = matrix.len();
+    
+    // 处理非方阵的情况：调整矩阵大小为最大边长的方阵
+    let max_dim = n.max(matrix[0].len());
+    
+    // 调整矩阵行数
+    while matrix.len() < max_dim {
+        matrix.push(vec![0; matrix[0].len()]);
+    }
+    
+    // 调整矩阵列数
+    for row in matrix.iter_mut() {
+        while row.len() < max_dim {
+            row.push(0);
+        }
+    }
+    
+    // 从外到内，一层一层旋转
+    for layer in 0..max_dim/2 {
+        let last = max_dim - 1 - layer;
+        
+        for i in layer..last {
+            // 保存左上角的值
+            let temp = matrix[layer][i];
+            
+            // 左边的值移到上边
+            matrix[layer][i] = matrix[last - (i - layer)][layer];
+            
+            // 下边的值移到左边
+            matrix[last - (i - layer)][layer] = matrix[last][last - (i - layer)];
+            
+            // 右边的值移到下边
+            matrix[last][last - (i - layer)] = matrix[i][last];
+            
+            // 上边的值（之前保存的）移到右边
+            matrix[i][last] = temp;
+        }
+    }
+    
+    // 如果原矩阵不是方阵，需要调整结果矩阵的大小
+    if n != matrix[0].len() {
+        // 调整行数
+        while matrix.len() > matrix[0].len() {
+            matrix.pop();
+        }
+    }
 }
 
 #[cfg(test)]

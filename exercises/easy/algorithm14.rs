@@ -12,8 +12,29 @@
 use std::fmt::{self, Display, Formatter};
 
 pub fn find_duplicates(nums: Vec<i32>) -> Vec<i32> {
-    // TODO: Implement the logic to find all duplicates in the array
-    Vec::new() // Placeholder return value
+    let mut nums = nums; // 获取数组的可变引用
+    let mut result = Vec::new();
+    
+    // 使用数组元素的正负号来标记是否出现过
+    for i in 0..nums.len() {
+        // 获取当前数字的绝对值作为索引（减1是因为数组索引从0开始）
+        let index = nums[i].abs() as usize - 1;
+        
+        // 如果对应位置的数字已经是负数，说明这个数字之前出现过
+        if nums[index] < 0 {
+            // 避免重复添加相同的数字
+            if !result.contains(&(index as i32 + 1)) {
+                result.push(index as i32 + 1);
+            }
+        } else {
+            // 将对应位置的数字标记为负数，表示这个数字已经出现过
+            nums[index] = -nums[index];
+        }
+    }
+    
+    // 对结果进行排序，保证输出顺序一致
+    result.sort_unstable();
+    result
 }
 
 #[cfg(test)]

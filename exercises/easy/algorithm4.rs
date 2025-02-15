@@ -58,14 +58,14 @@ where
 
     // Search for a value in the BST
     fn search(&self, value: T) -> bool {
-        fn search_internal<T: Ord>(node: &Option<Box<TreeNode<T>>>, value: &T) -> bool {
+        fn search_internal<T: Ord>(node: &Option<Box<TreeNode<T>>>, target: &T) -> bool {
             match node {
                 None => false,
                 Some(node) => {
-                    match value.cmp(&node.value) {
+                    match target.cmp(&node.value) {
                         Ordering::Equal => true,
-                        Ordering::Less => search_internal(&node.left, value),
-                        Ordering::Greater => search_internal(&node.right, value),
+                        Ordering::Less => search_internal(&node.left, target),
+                        Ordering::Greater => search_internal(&node.right, target),
                     }
                 }
             }
@@ -81,19 +81,23 @@ where
     // Insert a node into the tree
     fn insert(&mut self, value: T) {
         match value.cmp(&self.value) {
+            Ordering::Equal => return, // 重复值不插入，直接返回
             Ordering::Less => {
-                match &mut self.left {
-                    None => self.left = Some(Box::new(TreeNode::new(value))),
-                    Some(node) => node.insert(value),
+                // 插入到左子树
+                if self.left.is_none() {
+                    self.left = Some(Box::new(TreeNode::new(value)));
+                } else {
+                    self.left.as_mut().unwrap().insert(value);
                 }
             }
             Ordering::Greater => {
-                match &mut self.right {
-                    None => self.right = Some(Box::new(TreeNode::new(value))),
-                    Some(node) => node.insert(value),
+                // 插入到右子树
+                if self.right.is_none() {
+                    self.right = Some(Box::new(TreeNode::new(value)));
+                } else {
+                    self.right.as_mut().unwrap().insert(value);
                 }
             }
-            Ordering::Equal => {} // 如果值相等，不做任何操作（避免重复）
         }
     }
 }
@@ -149,4 +153,6 @@ mod tests {
             None => panic!("Root should not be None after insertion"),
         }
     }
-}
+}    
+
+

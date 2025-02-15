@@ -28,37 +28,51 @@ impl Graph for UndirectedGraph {
     fn adjacency_table(&self) -> &HashMap<String, Vec<(String, i32)>> {
         &self.adjacency_table
     }
-    fn add_edge(&mut self, edge: (&str, &str, i32)) {
-        let (from, to, weight) = edge;
-        
-        // 确保两个节点都存在
-        self.add_node(from);
-        self.add_node(to);
-        
-        // 因为是无向图，需要添加双向边
-        self.adjacency_table_mutable()
-            .get_mut(from)
-            .unwrap()
-            .push((to.to_string(), weight));
-            
-        self.adjacency_table_mutable()
-            .get_mut(to)
-            .unwrap()
-            .push((from.to_string(), weight));
+}
+
+impl UndirectedGraph {
+    // 添加一些辅助方法
+    pub fn get_neighbors(&self, node: &str) -> Option<&Vec<(String, i32)>> {
+        self.adjacency_table.get(node)
+    }
+
+    pub fn node_count(&self) -> usize {
+        self.adjacency_table.len()
+    }
+
+    pub fn edge_count(&self) -> usize {
+        self.edges().len() / 2  // 因为是无向图，每条边都被计算了两次
     }
 }
+
 pub trait Graph {
     fn new() -> Self;
     fn adjacency_table_mutable(&mut self) -> &mut HashMap<String, Vec<(String, i32)>>;
     fn adjacency_table(&self) -> &HashMap<String, Vec<(String, i32)>>;
     fn add_node(&mut self, node: &str) -> bool {
-        if self.contains(node) {
-            return false;
+        if self.adjacency_table_mutable().contains_key(node) {
+            return true;
         }
-        self.adjacency_table_mutable().insert(node.to_string(), Vec::new());
+        self.adjacency_table_mutable().insert(String::from(node), vec![]);
         true
     }
-    fn add_edge(&mut self, edge: (&str, &str, i32));
+    fn add_edge(&mut self, edge: (&str, &str, i32)) {
+        let (from, to, weight) = edge;
+        if !self.contains(from) {
+            self.add_node(from);
+        }
+        if !self.contains(to) {
+            self.add_node(to);
+        }
+        self.adjacency_table_mutable()
+            .get_mut(from)
+            .unwrap()
+            .push((String::from(to), weight));
+        self.adjacency_table_mutable()
+            .get_mut(to)
+            .unwrap()
+            .push((String::from(from), weight));
+    }
     fn contains(&self, node: &str) -> bool {
         self.adjacency_table().get(node).is_some()
     }

@@ -13,49 +13,46 @@ use std::fmt::{self, Display, Formatter};
 
 pub fn rotate_matrix_90_degrees(matrix: &mut Vec<Vec<i32>>) {
     let n = matrix.len();
-    
-    // 处理非方阵的情况：调整矩阵大小为最大边长的方阵
-    let max_dim = n.max(matrix[0].len());
-    
-    // 调整矩阵行数
-    while matrix.len() < max_dim {
-        matrix.push(vec![0; matrix[0].len()]);
+    if n <= 1 {
+        return;
     }
     
-    // 调整矩阵列数
-    for row in matrix.iter_mut() {
-        while row.len() < max_dim {
-            row.push(0);
-        }
-    }
-    
-    // 从外到内，一层一层旋转
-    for layer in 0..max_dim/2 {
-        let last = max_dim - 1 - layer;
+    // 如果是非方阵，需要先调整矩阵大小
+    let m = matrix[0].len();
+    if n != m {
+        // 创建新的矩阵大小
+        let mut new_matrix = vec![vec![0; n]; m];
         
-        for i in layer..last {
-            // 保存左上角的值
-            let temp = matrix[layer][i];
-            
-            // 左边的值移到上边
-            matrix[layer][i] = matrix[last - (i - layer)][layer];
-            
-            // 下边的值移到左边
-            matrix[last - (i - layer)][layer] = matrix[last][last - (i - layer)];
-            
-            // 右边的值移到下边
-            matrix[last][last - (i - layer)] = matrix[i][last];
-            
-            // 上边的值（之前保存的）移到右边
-            matrix[i][last] = temp;
+        // 旋转填充新矩阵
+        for i in 0..n {
+            for j in 0..m {
+                new_matrix[j][n-1-i] = matrix[i][j];
+            }
         }
+        
+        // 替换原矩阵
+        *matrix = new_matrix;
+        return;
     }
     
-    // 如果原矩阵不是方阵，需要调整结果矩阵的大小
-    if n != matrix[0].len() {
-        // 调整行数
-        while matrix.len() > matrix[0].len() {
-            matrix.pop();
+    // 对于方阵，按层处理旋转
+    for layer in 0..n/2 {
+        let last = n - 1 - layer;
+        for i in layer..last {
+            // 保存顶部元素
+            let top = matrix[layer][i];
+            
+            // 左边 -> 顶部
+            matrix[layer][i] = matrix[n-1-i][layer];
+            
+            // 底部 -> 左边
+            matrix[n-1-i][layer] = matrix[last][n-1-i];
+            
+            // 右边 -> 底部
+            matrix[last][n-1-i] = matrix[i][last];
+            
+            // 顶部 -> 右边
+            matrix[i][last] = top;
         }
     }
 }

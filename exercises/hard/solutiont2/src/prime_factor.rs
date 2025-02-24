@@ -1,26 +1,39 @@
-pub fn find_max_prime_factor(mut number: u128) -> u128 {
-    let mut max_factor = 1;
+pub fn find_max_prime_factor(number: u128) -> u128 {
+    let mut n = number;
+    let mut max_prime = 0;
     
     // 处理2这个特殊的素数
-    while number % 2 == 0 {
-        max_factor = 2;
-        number /= 2;
+    while n % 2 == 0 {
+        max_prime = 2;
+        n /= 2;
     }
     
-    // 从3开始检查奇数因子
-    let mut i = 3;
-    while i * i <= number {
-        while number % i == 0 {
-            max_factor = i;
-            number /= i;
+    // 处理3这个特殊的素数
+    while n % 3 == 0 {
+        max_prime = 3;
+        n /= 3;
+    }
+    
+    // 使用6k±1优化的试除法
+    let mut i = 5;
+    while i * i <= n {
+        // 检查6k-1的形式
+        while n % i == 0 {
+            max_prime = i;
+            n /= i;
         }
-        i += 2;
+        // 检查6k+1的形式
+        while n % (i + 2) == 0 {
+            max_prime = i + 2;
+            n /= (i + 2);
+        }
+        i += 6;
     }
     
-    // 如果剩余的数大于1，它本身就是最大的素因子
-    if number > 1 {
-        max_factor = number;
+    // 如果n大于1，说明n本身是素数
+    if n > 1 {
+        max_prime = n;
     }
     
-    max_factor
+    max_prime
 }

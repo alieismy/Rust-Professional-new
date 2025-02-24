@@ -12,27 +12,36 @@
 use std::fmt::{self, Display, Formatter};
 
 pub fn find_duplicates(nums: Vec<i32>) -> Vec<i32> {
-    let mut nums = nums; // 获取数组的可变引用
+    let mut nums = nums;
     let mut result = Vec::new();
     
-    // 使用数组元素的正负号来标记是否出现过
+    // 遍历数组中的每个数字
     for i in 0..nums.len() {
-        // 获取当前数字的绝对值作为索引（减1是因为数组索引从0开始）
-        let index = nums[i].abs() as usize - 1;
+        let current = nums[i].abs();  // 获取当前数字的绝对值
         
-        // 如果对应位置的数字已经是负数，说明这个数字之前出现过
-        if nums[index] < 0 {
-            // 避免重复添加相同的数字
-            if !result.contains(&(index as i32 + 1)) {
-                result.push(index as i32 + 1);
+        // 如果当前数字在数组范围内
+        if current as usize <= nums.len() {
+            let index = (current - 1) as usize;  // 转换为0-based索引
+            
+            // 如果该位置的数字大于0，将其变为负数
+            if nums[index] > 0 {
+                nums[index] = -nums[index];
+            } else {
+                // 如果已经是负数，说明这个数字是重复的
+                if !result.contains(&current) {
+                    result.push(current);
+                }
             }
         } else {
-            // 将对应位置的数字标记为负数，表示这个数字已经出现过
-            nums[index] = -nums[index];
+            // 对于超出范围的数字，检查是否已经在结果中
+            if nums.iter().filter(|&&x| x.abs() == current).count() > 1 
+                && !result.contains(&current) {
+                result.push(current);
+            }
         }
     }
     
-    // 对结果进行排序，保证输出顺序一致
+    // 排序结果以保证测试通过
     result.sort_unstable();
     result
 }

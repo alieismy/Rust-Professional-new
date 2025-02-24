@@ -1,85 +1,178 @@
 use std::collections::{HashMap, HashSet};
 use std::fs;
+use serde_json::{Value, Deserializer};
 
-pub fn count_provinces() -> String {
-    // 读取并解析 JSON 文件
-    let json_str = fs::read_to_string("district.json").unwrap();
-    let data: HashMap<String, HashMap<String, Vec<String>>> = 
-        serde_json::from_str(&json_str).unwrap();
-    
-    // 存储每个批次的省份数量
-    let mut result = Vec::new();
-    
-    // 处理每个批次
-    for i in 1..=5 {
-        let batch = data.get(&i.to_string()).unwrap();
-        result.push(count_batch_provinces(batch));
-    }
-    
-    // 返回结果字符串
-    result.iter()
-        .map(|x| x.to_string())
-        .collect::<Vec<String>>()
-        .join(",")
-}
-
-// 计算单个批次的省份数量
-fn count_batch_provinces(batch: &HashMap<String, Vec<String>>) -> u32 {
-    let mut union_find = UnionFind::new();
-    
-    // 将所有城市加入并查集
-    for (city, neighbors) in batch {
-        union_find.add(city);
-        for neighbor in neighbors {
-            union_find.add(neighbor);
-            union_find.union(city, neighbor);
-        }
-    }
-    
-    // 计算不同省份的数量
-    union_find.count_provinces()
-}
-
-// 并查集实现
+// 并查集结构
 struct UnionFind {
     parent: HashMap<String, String>,
+    rank: HashMap<String, usize>,
 }
 
 impl UnionFind {
     fn new() -> Self {
         UnionFind {
             parent: HashMap::new(),
+            rank: HashMap::new(),
         }
     }
-    
-    fn add(&mut self, city: &str) {
-        self.parent.entry(city.to_string())
-            .or_insert_with(|| city.to_string());
-    }
-    
+
     fn find(&mut self, city: &str) -> String {
-        let parent = self.parent.get(city).unwrap().clone();
-        if parent == city {
-            return city.to_string();
+        let p = self.parent.entry(city.to_string()).or_insert_with(|| {
+            self.rank.insert(city.to_string(), 1);
+            city.to_string()
+        }).clone();
+        
+        if p != city {
+            let root = self.find(&p);
+            self.parent.insert(city.to_string(), root.clone());
         }
-        let root = self.find(&parent);
-        self.parent.insert(city.to_string(), root.clone());
-        root
+        self.parent[city].clone()
+    }
+
+    fn union(&mut self, x: &str, y: &str) {
+        let root_x = self.find(x);
+        let root_y = self.find(y);
+        
+        if root_x == root_y {
+            return;
+        }
+
+        let rank_x = self.rank[&root_x];
+        let rank_y = self.rank[&root_y];
+        
+        if rank_x > rank_y {
+            self.parent.insert(root_y.clone(), root_x.clone());
+        } else {
+            self.parent.insert(root_x.clone(), root_y.clone());
+            if rank_x == rank_y {
+                *self.rank.get_mut(&root_y).unwrap() += 1;
+            }
+        }
+    }
+
+    fn count_roots(&self) -> i32 {
+        let mut roots = HashSet::new();
+        for (city, parent) in &self.parent {
+            if city == parent {
+                roots.insert(parent);
+            }
+        }
+        roots.len() as i32
+    }
+}
+
+pub fn count_provinces() -> String {
+    // 流式解析JSON
+    let file = fs::File::open("district.json").unwrap();
+    let stream = Deserializer::from_reader(file).into_iter::<Value>();
+    
+    let mut results = Vec::new();
+    
+    for value in stream {
+        if let Ok(json) = value {
+            if let Some(batches) = json.as_object() {
+                // 按批次顺序处理1-5
+                for batch_num in 1..=5 {
+                    let mut uf = UnionFind::new();
+                    if let Some(batch) = batches.get(&batch_num.to_string()) {
+                        if let Some(cities) = batch.as_object() {
+                            // 收集所有城市节点（包括邻居中提到的）
+                            let mut all_cities = HashSet::new();
+                            for (city, neighbors) in cities {
+                                all_cities.insert(city.as_str());
+                                if let Some(neighbors_array) = neighbors.as_array() {
+                                    for neighbor in neighbors_array {
+                                        if let Some(neighbor_str) = neighbor.as_str() {
+                                            all_cities.insert(neighbor_str);
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 初始化所有节点
+                            for &city in &all_cities {
+                                uf.find(city);
+                            }
+
+                            // 建立连接关系
+                            for (city, neighbors) in cities {
+                                if let Some(neighbors_array) = neighbors.as_array() {
+                                    for neighbor in neighbors_array {
+                                        if let Some(neighbor_str) = neighbor.as_str() {
+                                            if city != neighbor_str && all_cities.contains(neighbor_str) {
+                                                uf.union(city.as_str(), neighbor_str);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            let count = uf.count_roots();
+                            results.push(count);
+                        }
+                    } else {
+                        results.push(0); // 处理缺失批次
+                    }
+                }
+            }
+        }
     }
     
-    fn union(&mut self, city1: &str, city2: &str) {
-        let root1 = self.find(city1);
-        let root2 = self.find(city2);
-        if root1 != root2 {
-            self.parent.insert(root2, root1);
+    // 转换为逗号分隔的字符串
+    results.iter()
+        .map(|n| n.to_string())
+        .collect::<Vec<_>>()
+        .join(",")
+}
+                            // 第一遍处理所有节点
+                            for city in cities.keys() {
+                                uf.find(city);
+                            }
+                            // 第二遍处理边关系
+                            // 使用有序处理确保所有节点都被注册
+                            let mut all_cities = HashSet::new();
+                            for (city, neighbors) in cities {
+                                all_cities.insert(city.as_str());
+                                if let Some(neighbors_array) = neighbors.as_array() {
+                                    for neighbor in neighbors_array {
+                                        if let Some(neighbor_str) = neighbor.as_str() {
+                                            all_cities.insert(neighbor_str);
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // 初始化所有节点
+                            for &city in &all_cities {
+                                uf.find(city);
+                            }
+                            
+                            // 建立连接关系
+                            for (city, neighbors) in cities {
+                                if let Some(neighbors_array) = neighbors.as_array() {
+                                    for neighbor in neighbors_array {
+                                        if let Some(neighbor_str) = neighbor.as_str() {
+                                            if city != neighbor_str {
+                                                uf.union(city, neighbor_str);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            let count = uf.count_roots();
+                            results.push(count.to_string());
+                            continue;
+                        }
+                    }
+                    results.push("0".to_string()); // 处理缺失批次
+                }
+            }
         }
     }
     
-    fn count_provinces(&mut self) -> u32 {
-        let mut provinces = HashSet::new();
-        for city in self.parent.keys() {
-            provinces.insert(self.find(city));
-        }
-        provinces.len() as u32
-    }
+    results.join(",")
 }
